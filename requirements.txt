@@ -1,0 +1,28 @@
+# ============================================================
+# ShopSmart AI – Requirements
+# ============================================================
+
+# Web Framework (required)
+Flask==3.1.3
+Flask-CORS==6.0.5
+python-dotenv==1.2.2
+Werkzeug==3.1.8
+
+# IBM watsonx.ai SDK (optional – app runs in demo mode without it)
+# ibm-watsonx-ai==1.1.2
+
+# ChromaDB – Vector Store for RAG (optional – gracefully skipped if missing)
+chromadb==0.5.3
+
+# NLP / Embeddings (optional – used by ChromaDB)
+sentence-transformers==3.0.1
+
+# Image Processing (optional – multimodal image search)
+Pillow>=11.0.0
+pytesseract==0.3.10
+
+# Voice / Speech (optional – multimodal voice search)
+SpeechRecognition==3.10.4
+
+# Utilities
+requests==2.32.3

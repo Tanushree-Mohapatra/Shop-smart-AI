@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Recommendations{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="ss-page-header mb-5">
+    <h1 class="fw-bold"><i class="bi bi-magic text-danger me-2"></i>Personalised Recommendations</h1>
+    <p class="text-muted">Tell us your needs — IBM Granite (Agent 5) will find your perfect products.</p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Preference Form -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm sticky-top" style="top:80px">
+        <div class="card-header bg-danger text-white fw-bold"><i class="bi bi-sliders me-2"></i>Your Preferences</div>
+        <div class="card-body p-4">
+          <form id="prefForm">
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">💰 Budget (₹)</label>
+              <input type="range" class="form-range" id="budgetRange" min="1000" max="200000" step="1000" value="50000">
+              <div class="d-flex justify-content-between">
+                <small class="text-muted">₹1K</small>
+                <strong class="text-primary" id="budgetDisplay">₹50,000</strong>
+                <small class="text-muted">₹2L</small>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">📦 Category</label>
+              <select class="form-select" id="prefCategory">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.name }}">{{ cat.icon }} {{ cat.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">🏷️ Brand Preference</label>
+              <input type="text" class="form-control" id="prefBrand" placeholder="e.g. Apple, Samsung, Sony">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">🎯 Purpose / Use Case</label>
+              <textarea class="form-control" id="prefPurpose" rows="2" placeholder="e.g. gaming, programming, photography, fitness tracking"></textarea>
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold small">✨ Must-have Features</label>
+              <input type="text" class="form-control" id="prefFeatures" placeholder="e.g. 5G, AMOLED, long battery">
+            </div>
+            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold">
+              <i class="bi bi-magic me-2"></i>Get AI Recommendations
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="col-lg-8">
+      <div id="recoPlaceholder" class="text-center py-5">
+        <i class="bi bi-magic text-muted" style="font-size:4rem"></i>
+        <h4 class="text-muted mt-3">Set your preferences and get personalised picks</h4>
+        <p class="text-muted small">Agent 5 uses your budget, category, brand preference, and purpose to curate the perfect product list.</p>
+      </div>
+      <div id="recoLoading" class="d-none text-center py-5">
+        <div class="spinner-border text-danger mb-3"></div>
+        <p class="text-muted">Agent 5 is finding your perfect products...</p>
+      </div>
+      <div id="recoResults" class="d-none">
+        <!-- AI Text -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-robot me-2"></i>IBM Granite Recommendations</span>
+            <span class="badge bg-white text-danger">Agent 5</span>
+          </div>
+          <div class="card-body p-4">
+            <div id="recoAiText" class="ss-ai-response"></div>
+          </div>
+        </div>
+        <!-- Product Grid -->
+        <h5 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap me-2"></i>Top Matching Products</h5>
+        <div class="row g-3" id="recoProductGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const budgetRange = document.getElementById('budgetRange');
+const budgetDisplay = document.getElementById('budgetDisplay');
+budgetRange?.addEventListener('input', ()=>{
+  budgetDisplay.textContent = '₹' + parseInt(budgetRange.value).toLocaleString('en-IN');
+});
+
+document.getElementById('prefForm')?.addEventListener('submit', function(e){
+  e.preventDefault();
+  const prefs = {
+    budget: parseInt(budgetRange.value),
+    category: document.getElementById('prefCategory').value,
+    brand: document.getElementById('prefBrand').value,
+    purpose: document.getElementById('prefPurpose').value,
+    features: document.getElementById('prefFeatures').value.split(',').map(s=>s.trim()).filter(Boolean),
+  };
+  document.getElementById('recoPlaceholder').classList.add('d-none');
+  document.getElementById('recoLoading').classList.remove('d-none');
+  document.getElementById('recoResults').classList.add('d-none');
+
+  fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({preferences:prefs})})
+    .then(r=>r.json())
+    .then(data=>{
+      document.getElementById('recoLoading').classList.add('d-none');
+      const result = data.result||{};
+      document.getElementById('recoAiText').innerHTML = (result.ai_recommendations||'').replace(/\n/g,'<br/>');
+      const grid = document.getElementById('recoProductGrid');
+      grid.innerHTML = (result.top_products||[]).slice(0,9).map((p,i)=>`
+        <div class="col-sm-6 col-md-4">
+          <div class="card border-0 shadow-sm h-100 ss-product-card">
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">#${i+1}</span>
+                <span class="badge bg-secondary-subtle text-secondary">${p.platform||''}</span>
+              </div>
+              <div class="small text-muted">${p.brand_name||''}</div>
+              <h6 class="fw-semibold ss-clamp-2 mb-2">${p.name}</h6>
+              <div class="text-warning small mb-1">${'★'.repeat(Math.round(p.rating))} ${p.rating}</div>
+              <div class="fw-bold text-primary mb-2">₹${parseFloat(p.price).toLocaleString('en-IN')}</div>
+              <span class="badge bg-success-subtle text-success border border-success-subtle small">Score: ${p.recommendation_score}</span>
+            </div>
+            <div class="card-footer bg-transparent border-top-0 d-flex gap-2">
+              <a href="/product/${p.id}" class="btn btn-primary btn-sm flex-fill">View</a>
+              <button class="btn btn-outline-danger btn-sm global-wishlist-btn" data-pid="${p.id}"><i class="bi bi-heart"></i></button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('recoResults').classList.remove('d-none');
+    })
+    .catch(e=>{document.getElementById('recoLoading').classList.add('d-none');alert('Error: '+e);});
+});
+</script>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Price Alerts{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="ss-page-header mb-5">
+    <h1 class="fw-bold"><i class="bi bi-bell-fill text-warning me-2"></i>Price Alerts</h1>
+    <p class="text-muted">Get notified when a product price drops to your target. {{ alerts|length }} active alert(s).</p>
+  </div>
+
+  {% if alerts %}
+  <div class="row g-4">
+    {% for a in alerts %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+              <i class="bi bi-bell-fill me-1"></i>Alert Active
+            </span>
+            <button class="btn btn-outline-danger btn-sm delete-alert" data-pid="{{ a.product_id }}" title="Remove alert">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <h6 class="fw-semibold mb-1 ss-clamp-2">{{ a.product_name }}</h6>
+          <div class="small text-muted mb-3">{{ a.brand_name }}</div>
+          <div class="row g-2 text-center">
+            <div class="col-6">
+              <div class="p-2 bg-body-tertiary rounded-2">
+                <div class="fw-bold text-primary">₹{{ "{:,.0f}".format(a.current_price) }}</div>
+                <div class="tiny text-muted">Current Price</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 bg-warning-subtle rounded-2">
+                <div class="fw-bold text-warning">₹{{ "{:,.0f}".format(a.target_price) }}</div>
+                <div class="tiny text-muted">Target Price</div>
+              </div>
+            </div>
+          </div>
+          {% set pct = ((a.current_price - a.target_price) / a.current_price * 100)|round(1) %}
+          <div class="mt-3">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span>Needs to drop by</span>
+              <span class="fw-semibold text-danger">{{ pct }}%</span>
+            </div>
+            <div class="progress" style="height:6px">
+              <div class="progress-bar bg-danger" style="width:{{ [pct, 100]|min }}%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent border-top-0 d-flex gap-2">
+          <a href="{{ url_for('product_detail', product_id=a.product_id) }}" class="btn btn-primary btn-sm flex-fill">
+            <i class="bi bi-box-seam me-1"></i>View Product
+          </a>
+          <a href="{{ url_for('predictor') }}" class="btn btn-outline-info btn-sm" title="Price predictor">
+            <i class="bi bi-graph-up-arrow"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-bell text-muted" style="font-size:5rem"></i>
+    <h3 class="text-muted mt-3">No price alerts set</h3>
+    <p class="text-muted">Visit any product page and click <strong>Set Price Alert</strong> to track its price.</p>
+    <a href="{{ url_for('home') }}" class="btn btn-primary mt-2">
+      <i class="bi bi-house me-2"></i>Browse Products
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.delete-alert').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const pid = this.dataset.pid;
+    fetch(`/api/price-alert/${pid}`, {method:'DELETE'})
+      .then(r => r.json())
+      .then(() => {
+        showToast('Price alert removed', 'info');
+        this.closest('.col-md-6').remove();
+      })
+      .catch(() => showToast('Error removing alert', 'danger'));
+  });
+});
+</script>
+{% endblock %}

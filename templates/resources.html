@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Resources{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="ss-page-header mb-5">
+    <h1 class="fw-bold"><i class="bi bi-book text-primary me-2"></i>Shopping Resources</h1>
+    <p class="text-muted">Expert guides, buying tips, and consumer rights — all powered by our RAG knowledge base.</p>
+  </div>
+  <div class="row g-4">
+    {% set resources = [
+      ('💻','Laptop Buying Guide','Learn what specs matter: processor, RAM, SSD, display, and battery. Find the right laptop for programming, gaming, or creative work.','primary','laptop buying guide processor RAM SSD'),
+      ('📱','Smartphone Guide','Navigate the crowded smartphone market. Understand camera sensors, 5G, display types, and what makes a phone worth buying.','success','smartphone buying guide camera display 5G'),
+      ('🎧','Headphones Guide','Over-ear vs in-ear, ANC quality, codec support, and battery life — everything you need to pick the perfect audio companion.','warning','headphones ANC wireless buying guide'),
+      ('⌚','Smartwatch Guide','Health tracking, compatibility, battery, and display explained. Find the best smartwatch for fitness or productivity.','info','smartwatch fitness health tracking buying guide'),
+      ('🛡️','Consumer Rights','Know your rights when buying electronics in India. Returns, warranties, and how to escalate complaints.','danger','consumer rights warranty return policy India'),
+      ('🌱','Eco Shopping Guide','Make greener choices. Understand eco scores, energy efficiency ratings, and sustainable brands.','success','eco green sustainable electronics shopping'),
+      ('🔍','Fake Review Detection','Learn to spot inauthentic reviews and make smarter purchase decisions with our AI-powered detection tips.','secondary','fake reviews detection authenticity shopping tips'),
+      ('💰','Price Timing Guide','Master the art of buying at the right time. Understand sale seasons, price cycles, and discount patterns.','primary','price drop sale season best time to buy'),
+    ] %}
+    {% for icon, title, desc, color, query in resources %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="fs-2 mb-3">{{ icon }}</div>
+          <h5 class="fw-bold mb-2">{{ title }}</h5>
+          <p class="text-muted small mb-3">{{ desc }}</p>
+          <button class="btn btn-{{ color }}-subtle text-{{ color }} border-{{ color }}-subtle btn-sm ask-rag"
+                  data-query="{{ query }}">
+            <i class="bi bi-robot me-1"></i>Ask AI
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- RAG Answer Panel -->
+  <div id="ragPanel" class="mt-5 d-none">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between">
+        <span><i class="bi bi-robot me-2"></i>IBM Granite Knowledge Base Answer</span>
+        <span class="badge bg-white text-primary">RAG + ChromaDB</span>
+      </div>
+      <div class="card-body p-4">
+        <div id="ragLoading" class="text-center py-3"><div class="spinner-border text-primary mb-2"></div><p class="text-muted">Retrieving from ChromaDB + IBM Granite...</p></div>
+        <div id="ragAnswer" class="ss-ai-response d-none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Q&A -->
+  <div class="card border-0 shadow-sm mt-5">
+    <div class="card-header fw-bold"><i class="bi bi-question-circle me-2 text-info"></i>Ask Any Shopping Question</div>
+    <div class="card-body p-4">
+      <div class="input-group input-group-lg">
+        <input type="text" id="customRagQuery" class="form-control" placeholder="e.g. Is 8GB RAM enough for gaming? Should I buy an SSD or HDD?">
+        <button class="btn btn-primary px-4" id="customRagBtn">Ask IBM Granite</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function askRag(query) {
+  document.getElementById('ragPanel').classList.remove('d-none');
+  document.getElementById('ragLoading').classList.remove('d-none');
+  document.getElementById('ragAnswer').classList.add('d-none');
+  document.getElementById('ragPanel').scrollIntoView({behavior:'smooth'});
+
+  fetch('/api/knowledge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:query})})
+    .then(r=>r.json())
+    .then(d=>{
+      document.getElementById('ragLoading').classList.add('d-none');
+      const ans = d.result?.answer || d.result?.response || 'No answer available.';
+      document.getElementById('ragAnswer').innerHTML = ans.replace(/\n/g,'<br/>');
+      document.getElementById('ragAnswer').classList.remove('d-none');
+    })
+    .catch(e=>{document.getElementById('ragLoading').classList.add('d-none');alert('Error: '+e);});
+}
+
+document.querySelectorAll('.ask-rag').forEach(btn=>btn.addEventListener('click',()=>askRag(btn.dataset.query)));
+document.getElementById('customRagBtn')?.addEventListener('click',()=>{
+  const q=document.getElementById('customRagQuery').value.trim();
+  if(q) askRag(q);
+});
+document.getElementById('customRagQuery')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('customRagBtn').click();});
+</script>
+{% endblock %}

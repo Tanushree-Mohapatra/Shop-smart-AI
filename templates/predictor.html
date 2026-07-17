@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Price Predictor{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="ss-page-header mb-5">
+    <h1 class="fw-bold"><i class="bi bi-graph-up-arrow text-info me-2"></i>Price Predictor</h1>
+    <p class="text-muted">AI-powered price trend analysis and buy-timing predictions. Agent 4: Predictive Shopping.</p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Product Selector -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm sticky-top" style="top:80px">
+        <div class="card-header fw-bold bg-info text-white"><i class="bi bi-search me-2"></i>Select Product</div>
+        <div class="card-body p-3">
+          <input type="text" id="predictSearch" class="form-control mb-3" placeholder="Search products...">
+          <div style="max-height:450px;overflow-y:auto">
+            {% for p in products %}
+            <div class="ss-product-list-item p-2 rounded mb-1 predict-item cursor-pointer"
+                 data-pid="{{ p.id }}" data-name="{{ p.name|lower }}">
+              <div class="d-flex gap-2 align-items-center">
+                <span>{% if 'Laptop' in p.category_name %}💻{% elif 'Smart' in p.category_name %}📱{% elif 'Head' in p.category_name %}🎧{% else %}🛒{% endif %}</span>
+                <div class="min-w-0">
+                  <div class="small fw-semibold text-truncate">{{ p.name }}</div>
+                  <div class="tiny text-muted">₹{{ "{:,.0f}".format(p.price) }} • {{ p.platform }}</div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="col-lg-8">
+      <div id="predictPlaceholder" class="text-center py-5">
+        <i class="bi bi-graph-up-arrow text-muted" style="font-size:4rem"></i>
+        <h4 class="text-muted mt-3">Select a product to analyse its price history</h4>
+        <p class="text-muted small">IBM Granite will predict price trends, identify upcoming deals, and tell you the best time to buy.</p>
+      </div>
+      <div id="predictLoading" class="d-none text-center py-5">
+        <div class="spinner-border text-info mb-3"></div>
+        <p class="text-muted">Agent 4 is analysing 30-day price history...</p>
+      </div>
+      <div id="predictResults" class="d-none">
+        <!-- Recommendation Banner -->
+        <div id="buySuggestion" class="alert alert-info d-flex align-items-center gap-3 mb-4 border-0 shadow-sm">
+          <span id="buyIcon" class="fs-2"></span>
+          <div>
+            <h5 id="buyDecision" class="mb-1 fw-bold"></h5>
+            <p id="buyReason" class="mb-0 small"></p>
+          </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="row g-3 mb-4" id="priceStatCards"></div>
+
+        <!-- Price Chart -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header fw-bold"><i class="bi bi-bar-chart me-2 text-info"></i>30-Day Price History</div>
+          <div class="card-body">
+            <canvas id="priceChart" height="100"></canvas>
+          </div>
+        </div>
+
+        <!-- AI Advice -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-info text-white d-flex justify-content-between align-items-center fw-bold">
+            <span><i class="bi bi-robot me-2"></i>IBM Granite Price Advice</span>
+            <span class="badge bg-white text-info">Agent 4: Predictive</span>
+          </div>
+          <div class="card-body p-4">
+            <div id="priceAdvice" class="ss-ai-response"></div>
+          </div>
+        </div>
+
+        <!-- Sale Calendar -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-bold"><i class="bi bi-calendar-event me-2 text-warning"></i>Indian Sale Calendar</div>
+          <div class="card-body">
+            <div class="row g-2" id="saleCalendar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let priceChartInstance = null;
+const saleMonths = {1:'🎉 Republic Day Sale',3:'🌈 Holi / FY End Sale',8:'🇮🇳 Independence Day Sale',9:'🌊 Onam Sale',10:'🪔 Big Billion / Diwali',11:'🖤 Black Friday / Singles Day',12:'🎄 Year-End Sale'};
+
+document.getElementById('predictSearch')?.addEventListener('input',function(){
+  const q=this.value.toLowerCase();
+  document.querySelectorAll('.predict-item').forEach(el=>el.style.display=el.dataset.name.includes(q)?'':'none');
+});
+
+document.querySelectorAll('.predict-item').forEach(item=>{
+  item.addEventListener('click',function(){
+    document.querySelectorAll('.predict-item').forEach(i=>i.classList.remove('bg-info-subtle'));
+    this.classList.add('bg-info-subtle');
+    const pid=this.dataset.pid;
+    document.getElementById('predictPlaceholder').classList.add('d-none');
+    document.getElementById('predictLoading').classList.remove('d-none');
+    document.getElementById('predictResults').classList.add('d-none');
+
+    fetch(`/api/predict/${pid}`)
+      .then(r=>r.json())
+      .then(data=>{
+        document.getElementById('predictLoading').classList.add('d-none');
+        const result=data.result||{};
+        const pred=result.prediction||{};
+
+        // Buy suggestion banner
+        const colours={'BUY NOW':'success','WAIT':'warning','MONITOR':'info'};
+        const icons={'BUY NOW':'🛒','WAIT':'⏳','MONITOR':'👁️'};
+        const bannerEl=document.getElementById('buySuggestion');
+        bannerEl.className=`alert alert-${colours[pred.recommendation]||'info'} d-flex align-items-center gap-3 mb-4 border-0 shadow-sm`;
+        document.getElementById('buyIcon').textContent=icons[pred.recommendation]||'💡';
+        document.getElementById('buyDecision').textContent=pred.recommendation||'MONITOR';
+        document.getElementById('buyReason').textContent=pred.reason||'';
+
+        // Stat cards
+        const cards=[
+          {label:'Current Price',value:`₹${parseFloat(pred.current_price).toLocaleString('en-IN')}`,icon:'bi-tag',color:'primary'},
+          {label:'30d Low',value:`₹${parseFloat(pred.min_price_30d).toLocaleString('en-IN')}`,icon:'bi-arrow-down-circle',color:'success'},
+          {label:'30d High',value:`₹${parseFloat(pred.max_price_30d).toLocaleString('en-IN')}`,icon:'bi-arrow-up-circle',color:'danger'},
+          {label:'Discount',value:`${pred.discount_from_original}%`,icon:'bi-percent',color:'warning'},
+        ];
+        document.getElementById('priceStatCards').innerHTML=cards.map(c=>
+          `<div class="col-sm-6 col-md-3"><div class="card border-${c.color} text-center p-3 shadow-sm"><i class="bi ${c.icon} text-${c.color} fs-3 mb-2 d-block"></i><div class="fw-bold">${c.value}</div><div class="small text-muted">${c.label}</div></div></div>`
+        ).join('');
+
+        // Chart
+        const ph=result.price_history||[];
+        const labels=ph.map(h=>h.recorded_at?.split('T')[0]);
+        const prices=ph.map(h=>h.price);
+        if(priceChartInstance)priceChartInstance.destroy();
+        const ctx=document.getElementById('priceChart').getContext('2d');
+        priceChartInstance=new Chart(ctx,{
+          type:'line',
+          data:{labels,datasets:[{label:'Price (₹)',data:prices,borderColor:'#0dcaf0',backgroundColor:'rgba(13,202,240,0.1)',fill:true,tension:0.3,pointRadius:2}]},
+          options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'₹'+v.toLocaleString('en-IN')}}}}
+        });
+
+        // AI advice
+        document.getElementById('priceAdvice').innerHTML=(result.advice||'').replace(/\n/g,'<br/>');
+
+        // Sale calendar
+        const now=new Date().getMonth()+1;
+        document.getElementById('saleCalendar').innerHTML=Object.entries(saleMonths).map(([m,name])=>
+          `<div class="col-md-6"><div class="d-flex align-items-center gap-2 p-2 rounded ${parseInt(m)===now?'bg-warning-subtle border border-warning':'bg-body-secondary'} mb-1"><span class="badge bg-secondary">${['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]}</span><span class="small ${parseInt(m)===now?'fw-bold':''}">${name}</span>${parseInt(m)===now?'<span class="badge bg-warning text-dark ms-auto">Now</span>':''}</div></div>`
+        ).join('');
+
+        document.getElementById('predictResults').classList.remove('d-none');
+      })
+      .catch(e=>{document.getElementById('predictLoading').classList.add('d-none');alert('Error: '+e);});
+  });
+});
+</script>
+{% endblock %}

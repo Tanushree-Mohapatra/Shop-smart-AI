@@ -1,0 +1,188 @@
+{
+  "flow_name": "ShopSmart AI – IBM Langflow Workflow",
+  "description": "Complete agentic shopping assistant workflow. Import into IBM Langflow to visualise and run the multi-agent pipeline.",
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "node_user_input",
+      "type": "TextInput",
+      "label": "User Input",
+      "description": "Accepts natural language queries from the frontend",
+      "position": {"x": 50, "y": 300},
+      "outputs": ["node_intent_classifier"]
+    },
+    {
+      "id": "node_intent_classifier",
+      "type": "TextClassifier",
+      "label": "Intent Classifier",
+      "description": "Classifies user intent: knowledge / comparison / review / prediction / recommendation / sustainability / multimodal / assistant",
+      "model": "ibm/granite-3-8b-instruct",
+      "position": {"x": 300, "y": 300},
+      "inputs": ["node_user_input"],
+      "outputs": ["node_orchestrator"]
+    },
+    {
+      "id": "node_orchestrator",
+      "type": "IBMOrchestrateRouter",
+      "label": "IBM Orchestrate Orchestrator",
+      "description": "Central router that delegates to the appropriate agent(s) based on detected intent. Implements IBM Orchestrate task routing.",
+      "position": {"x": 550, "y": 300},
+      "inputs": ["node_intent_classifier"],
+      "outputs": [
+        "node_agent_knowledge",
+        "node_agent_comparison",
+        "node_agent_review",
+        "node_agent_prediction",
+        "node_agent_recommendation",
+        "node_agent_sustainability",
+        "node_agent_multimodal",
+        "node_agent_assistant"
+      ]
+    },
+    {
+      "id": "node_rag_retriever",
+      "type": "ChromaDBRetriever",
+      "label": "RAG Retriever (ChromaDB)",
+      "description": "Retrieves relevant shopping knowledge from ChromaDB vector store. Uses sentence-transformers embeddings (all-MiniLM-L6-v2).",
+      "collection": "shopsmart_knowledge",
+      "n_results": 3,
+      "position": {"x": 800, "y": 100},
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_knowledge",
+      "type": "Agent",
+      "label": "Agent 1: Shopping Knowledge",
+      "description": "Answers shopping questions using RAG + IBM Granite",
+      "position": {"x": 800, "y": 180},
+      "inputs": ["node_orchestrator", "node_rag_retriever"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_comparison",
+      "type": "Agent",
+      "label": "Agent 2: Product Comparison",
+      "description": "Compares multiple products with AI analysis",
+      "position": {"x": 800, "y": 240},
+      "inputs": ["node_orchestrator", "node_rag_retriever"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_review",
+      "type": "Agent",
+      "label": "Agent 3: Review Intelligence",
+      "description": "Sentiment analysis + fake review detection",
+      "position": {"x": 800, "y": 300},
+      "inputs": ["node_orchestrator", "node_rag_retriever"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_prediction",
+      "type": "Agent",
+      "label": "Agent 4: Predictive Shopping",
+      "description": "Price trend analysis + buy timing advice",
+      "position": {"x": 800, "y": 360},
+      "inputs": ["node_orchestrator", "node_rag_retriever"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_recommendation",
+      "type": "Agent",
+      "label": "Agent 5: Recommendation",
+      "description": "Personalised top-10 product recommendations",
+      "position": {"x": 800, "y": 420},
+      "inputs": ["node_orchestrator", "node_rag_retriever"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_sustainability",
+      "type": "Agent",
+      "label": "Agent 6: Sustainability",
+      "description": "Eco scores, carbon impact, green alternatives",
+      "position": {"x": 800, "y": 480},
+      "inputs": ["node_orchestrator", "node_rag_retriever"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_multimodal",
+      "type": "Agent",
+      "label": "Agent 7: Multimodal Search",
+      "description": "Text, image, and voice product search",
+      "position": {"x": 800, "y": 540},
+      "inputs": ["node_orchestrator"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_agent_assistant",
+      "type": "Agent",
+      "label": "Agent 8: Shopping Assistant",
+      "description": "Conversational AI with chat history",
+      "position": {"x": 800, "y": 600},
+      "inputs": ["node_orchestrator", "node_rag_retriever"],
+      "outputs": ["node_granite_llm"]
+    },
+    {
+      "id": "node_granite_llm",
+      "type": "IBMwatsonxLLM",
+      "label": "IBM Granite LLM",
+      "description": "IBM watsonx.ai Granite model inference. All agents funnel through this node.",
+      "model_id": "ibm/granite-3-8b-instruct",
+      "parameters": {
+        "max_new_tokens": 1024,
+        "temperature": 0.7,
+        "top_p": 0.9
+      },
+      "position": {"x": 1100, "y": 350},
+      "inputs": [
+        "node_agent_knowledge", "node_agent_comparison",
+        "node_agent_review", "node_agent_prediction",
+        "node_agent_recommendation", "node_agent_sustainability",
+        "node_agent_multimodal", "node_agent_assistant"
+      ],
+      "outputs": ["node_response_formatter"]
+    },
+    {
+      "id": "node_response_formatter",
+      "type": "PromptTemplate",
+      "label": "Response Formatter",
+      "description": "Formats the Granite response for the frontend. Adds agent metadata, intent tag, and timestamp.",
+      "position": {"x": 1350, "y": 350},
+      "inputs": ["node_granite_llm"],
+      "outputs": ["node_frontend_output"]
+    },
+    {
+      "id": "node_frontend_output",
+      "type": "JSONOutput",
+      "label": "Frontend Output",
+      "description": "Returns structured JSON to the Flask API endpoint",
+      "position": {"x": 1600, "y": 350},
+      "inputs": ["node_response_formatter"]
+    }
+  ],
+  "ibm_orchestrate_integration": {
+    "description": "IBM Orchestrate skills registered from this workflow",
+    "skills": [
+      {"skill_id": "shopping_knowledge_skill", "agent": "node_agent_knowledge", "trigger": "product question"},
+      {"skill_id": "product_comparison_skill", "agent": "node_agent_comparison", "trigger": "compare products"},
+      {"skill_id": "review_analysis_skill", "agent": "node_agent_review", "trigger": "review analysis"},
+      {"skill_id": "price_prediction_skill", "agent": "node_agent_prediction", "trigger": "price prediction"},
+      {"skill_id": "recommendation_skill", "agent": "node_agent_recommendation", "trigger": "recommend products"},
+      {"skill_id": "sustainability_skill", "agent": "node_agent_sustainability", "trigger": "eco analysis"},
+      {"skill_id": "multimodal_search_skill", "agent": "node_agent_multimodal", "trigger": "image voice search"},
+      {"skill_id": "shopping_assistant_skill", "agent": "node_agent_assistant", "trigger": "chat conversation"}
+    ],
+    "automations": [
+      {"name": "Price Alert Automation", "description": "Trigger when product price drops below target", "agent": "node_agent_prediction"},
+      {"name": "Weekly Deal Summary", "description": "Generate weekly top deals email", "agent": "node_agent_recommendation"},
+      {"name": "Fake Review Monitor", "description": "Monitor new reviews for fake indicators", "agent": "node_agent_review"}
+    ]
+  },
+  "langflow_import_instructions": [
+    "1. Open IBM Langflow in your browser",
+    "2. Click 'Import' and select this langflow_workflow.json file",
+    "3. Set your IBM watsonx.ai API key in the IBM Granite node settings",
+    "4. Set your ChromaDB path in the RAG Retriever node",
+    "5. Click 'Run' to test the full agentic pipeline",
+    "6. Connect the Output node to your Flask API endpoint"
+  ]
+}

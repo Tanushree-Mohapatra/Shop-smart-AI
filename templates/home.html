@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- ── Hero Section ──────────────────────── -->
+<section class="ss-hero">
+  <div class="container py-5">
+    <div class="row align-items-center min-vh-60">
+      <div class="col-lg-7">
+        <div class="ss-hero-badge mb-3">
+          <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fs-tiny fw-bold">
+            <i class="bi bi-stars me-1"></i>Powered by IBM Granite &amp; watsonx.ai
+          </span>
+        </div>
+        <h1 class="ss-hero-title display-4 fw-bold mb-3">
+          Shop Smarter with<br>
+          <span class="ss-gradient-text">Agentic AI</span>
+        </h1>
+        <p class="lead text-muted mb-4">
+          8 intelligent AI agents collaborate to compare products, analyse reviews,
+          predict price drops, and deliver personalised recommendations — all powered by IBM Granite.
+        </p>
+        <div class="d-flex flex-wrap gap-3 mb-4">
+          <a href="{{ url_for('assistant') }}" class="btn ss-btn-primary btn-lg px-4">
+            <i class="bi bi-robot me-2"></i>Start Shopping with AI
+          </a>
+          <a href="{{ url_for('comparison') }}" class="btn btn-outline-secondary btn-lg px-4">
+            <i class="bi bi-bar-chart-steps me-2"></i>Compare Products
+          </a>
+        </div>
+        <!-- Quick stats -->
+        <div class="d-flex flex-wrap gap-4 text-muted small">
+          <div><i class="bi bi-box-seam text-primary me-1"></i><strong>{{ products|length }}+</strong> Products</div>
+          <div><i class="bi bi-cpu text-success me-1"></i><strong>8</strong> AI Agents</div>
+          <div><i class="bi bi-shield-check text-info me-1"></i><strong>RAG</strong> Powered</div>
+          <div><i class="bi bi-lightning text-warning me-1"></i><strong>Real-time</strong> Analysis</div>
+        </div>
+      </div>
+      <div class="col-lg-5 d-none d-lg-block text-center">
+        <div class="ss-hero-visual p-4">
+          <div class="ss-agent-grid">
+            {% set agents = [
+              ('🧠','Knowledge','primary'), ('⚖️','Compare','success'),
+              ('⭐','Reviews','warning'), ('📈','Predict','info'),
+              ('🎯','Recommend','danger'), ('🌱','Eco','success'),
+              ('📷','Multimodal','secondary'), ('💬','Assistant','primary')
+            ] %}
+            {% for icon, name, color in agents %}
+            <div class="ss-agent-card text-center p-3 rounded-3 bg-{{ color }}-subtle border border-{{ color }}-subtle">
+              <div class="fs-3">{{ icon }}</div>
+              <div class="small fw-semibold text-{{ color }} mt-1">{{ name }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features Strip ────────────────────── -->
+<section class="ss-features-strip py-3 border-top border-bottom">
+  <div class="container">
+    <div class="row g-2 text-center">
+      {% set features = [
+        ('bi-graph-up-arrow','Price Predictions','primary'),
+        ('bi-star-half','Review Analysis','warning'),
+        ('bi-shield-check','Fake Review Detection','danger'),
+        ('bi-magic','AI Recommendations','success'),
+        ('bi-camera','Image Search','info'),
+        ('bi-mic','Voice Search','secondary'),
+        ('bi-leaf','Eco Scores','success'),
+        ('bi-bar-chart-line','Analytics Dashboard','primary'),
+      ] %}
+      {% for icon, label, color in features %}
+      <div class="col-6 col-sm-3 col-lg-auto flex-lg-fill">
+        <div class="d-flex align-items-center justify-content-center gap-2 py-2 px-3 rounded-2 bg-{{ color }}-subtle">
+          <i class="bi {{ icon }} text-{{ color }}"></i>
+          <span class="small fw-medium">{{ label }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── Categories ────────────────────────── -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="fw-bold mb-4"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Browse Categories</h2>
+    <div class="row g-3">
+      {% for cat in categories %}
+      <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <a href="{{ url_for('products_page') }}?category={{ cat.name }}" class="text-decoration-none">
+          <div class="ss-category-card text-center p-3 rounded-3 h-100 border">
+            <div class="fs-2 mb-2">{{ cat.icon }}</div>
+            <div class="fw-semibold small">{{ cat.name }}</div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── Trending Products ──────────────────── -->
+<section class="py-5 bg-body-secondary">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold mb-0"><i class="bi bi-fire me-2 text-danger"></i>Trending Products</h2>
+      <a href="{{ url_for('recommendations') }}" class="btn btn-sm btn-outline-primary">View All <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="row g-4">
+      {% for p in products[:8] %}
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card ss-product-card h-100 shadow-sm border-0">
+          <div class="card-header ss-product-img-wrap d-flex align-items-center justify-content-center py-4 bg-body-tertiary">
+            <span class="fs-1">
+              {% if 'Laptop' in p.category_name %}💻
+              {% elif 'Phone' in p.category_name or 'Smart' in p.category_name %}📱
+              {% elif 'Head' in p.category_name %}🎧
+              {% elif 'Watch' in p.category_name %}⌚
+              {% elif 'TV' in p.category_name %}📺
+              {% else %}🛒{% endif %}
+            </span>
+            {% if p.is_trending %}
+            <span class="badge bg-danger position-absolute top-0 end-0 m-2">🔥 Trending</span>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <div class="small text-muted mb-1">{{ p.brand_name }} • {{ p.category_name }}</div>
+            <h6 class="card-title fw-semibold mb-2 ss-clamp-2">{{ p.name }}</h6>
+            <div class="d-flex align-items-center gap-1 mb-2">
+              <span class="text-warning">{{ '★' * (p.rating|int) }}{{ '☆' * (5 - p.rating|int) }}</span>
+              <span class="small text-muted">({{ p.review_count }})</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <span class="fw-bold fs-5 text-primary">₹{{ "{:,.0f}".format(p.price) }}</span>
+                {% if p.original_price and p.original_price > p.price %}
+                <span class="text-muted text-decoration-line-through small ms-1">₹{{ "{:,.0f}".format(p.original_price) }}</span>
+                {% endif %}
+              </div>
+              <span class="badge bg-success-subtle text-success border border-success-subtle small">{{ p.platform }}</span>
+            </div>
+          </div>
+          <div class="card-footer bg-transparent border-top-0 d-flex gap-2">
+            <a href="{{ url_for('product_detail', product_id=p.id) }}" class="btn btn-primary btn-sm flex-fill">View</a>
+            <button class="btn btn-outline-danger btn-sm global-wishlist-btn" data-pid="{{ p.id }}" title="Add to Wishlist">
+              <i class="bi bi-heart"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── IBM AI Agents Section ─────────────── -->
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold"><i class="bi bi-cpu me-2 text-primary"></i>8 Intelligent AI Agents</h2>
+      <p class="text-muted">Orchestrated by IBM Orchestrate &amp; powered by IBM Granite</p>
+    </div>
+    <div class="row g-4">
+      {% set agent_cards = [
+        ('1','Shopping Knowledge','bi-book','primary','Answer product questions, explain specs, and compare technologies using IBM Granite LLM.','resources'),
+        ('2','Product Comparison','bi-bar-chart-steps','success','Side-by-side comparison with pros/cons, best value, budget, and premium picks.','comparison'),
+        ('3','Review Intelligence','bi-star-half','warning','Sentiment analysis, fake review detection, and customer satisfaction scoring.','reviews'),
+        ('4','Price Predictor','bi-graph-up-arrow','info','Price trend analysis, seasonal buying advice, and discount predictions.','predictor'),
+        ('5','Recommendation','bi-magic','danger','Personalised top-10 picks based on budget, category, and preferences.','recommendations'),
+        ('6','Sustainability','bi-leaf','success','Eco scores, carbon impact, recyclability, and green alternatives.','about'),
+        ('7','Multimodal Search','bi-camera','secondary','Search by image, voice, or text. OCR-powered product identification.','multimodal'),
+        ('8','Shopping Assistant','bi-chat-dots','primary','24/7 conversational AI assistant for all your shopping needs.','assistant'),
+      ] %}
+      {% for num, name, icon, color, desc, page in agent_cards %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm ss-agent-feature-card">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="ss-agent-number bg-{{ color }}-subtle text-{{ color }} rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-weight:700;font-size:.85rem;">{{ num }}</div>
+              <div class="ss-agent-icon text-{{ color }} fs-4"><i class="bi {{ icon }}"></i></div>
+            </div>
+            <h6 class="fw-bold mb-2">Agent {{ num }}: {{ name }}</h6>
+            <p class="text-muted small mb-3">{{ desc }}</p>
+            <a href="{{ url_for(page) }}" class="btn btn-{{ color }}-subtle btn-sm text-{{ color }} border-{{ color }}-subtle">Try Now <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── Quick AI Chat ──────────────────────── -->
+<section class="py-5 bg-body-secondary">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card border-0 shadow ss-chat-preview-card">
+          <div class="card-body p-4">
+            <div class="text-center mb-4">
+              <h3 class="fw-bold"><i class="bi bi-robot text-primary me-2"></i>Ask Anything</h3>
+              <p class="text-muted">Try our AI-powered shopping assistant right now</p>
+            </div>
+            <div id="quickChatMessages" class="ss-quick-chat mb-3">
+              <div class="ss-chat-bubble ss-chat-bot">
+                <i class="bi bi-robot me-2 text-primary"></i>
+                Hi! I'm ShopSmart AI powered by IBM Granite. Ask me anything about products, prices, or recommendations!
+              </div>
+            </div>
+            <div class="input-group">
+              <input type="text" id="quickChatInput" class="form-control" placeholder="e.g. Best laptop under ₹60000 for programming?" />
+              <button class="btn btn-primary px-4" id="quickChatBtn">
+                <i class="bi bi-send-fill"></i>
+              </button>
+            </div>
+            <div class="mt-2 d-flex flex-wrap gap-2">
+              {% set suggestions = ["Best gaming phone under ₹30000","Compare Sony WH-1000XM5 vs AirPods Pro","When will iPhone price drop?","Best wireless headphones for commuting"] %}
+              {% for s in suggestions %}
+              <button class="btn btn-outline-secondary btn-sm quick-suggestion" data-query="{{ s }}">{{ s }}</button>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Quick chat on home page
+const chatInput = document.getElementById('quickChatInput');
+const chatBtn   = document.getElementById('quickChatBtn');
+const chatBox   = document.getElementById('quickChatMessages');
+
+function appendMsg(text, type) {
+  const div = document.createElement('div');
+  div.className = 'ss-chat-bubble ss-chat-' + type;
+  div.innerHTML = (type==='bot' ? '<i class="bi bi-robot me-2 text-primary"></i>' : '<i class="bi bi-person me-2 text-secondary"></i>') + text;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function sendQuickChat() {
+  const q = chatInput.value.trim();
+  if (!q) return;
+  appendMsg(q, 'user');
+  chatInput.value = '';
+  appendMsg('<div class="spinner-border spinner-border-sm text-primary"></div> Thinking...', 'bot');
+  fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:q})})
+    .then(r=>r.json())
+    .then(d => {
+      chatBox.lastChild.remove();
+      const ans = d.result?.answer || d.result?.response || d.result?.ai_recommendations || 'Sorry, I could not process that.';
+      appendMsg(ans.substring(0,400)+'...', 'bot');
+    })
+    .catch(()=>{ chatBox.lastChild.remove(); appendMsg('Connection error. Please try again.','bot'); });
+}
+
+chatBtn?.addEventListener('click', sendQuickChat);
+chatInput?.addEventListener('keydown', e=>{ if(e.key==='Enter') sendQuickChat(); });
+document.querySelectorAll('.quick-suggestion').forEach(b=>b.addEventListener('click',()=>{ chatInput.value=b.dataset.query; sendQuickChat(); }));
+
+</script>
+{% endblock %}

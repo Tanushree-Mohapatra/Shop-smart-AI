@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }}{% endblock %}
+{% block content %}
+<div class="container text-center py-5 mt-5">
+  <div class="display-1 text-muted fw-bold">{{ code }}</div>
+  <h2 class="mt-3 mb-2">{{ message }}</h2>
+  <p class="text-muted mb-4">Don't worry, our AI agents are still running!</p>
+  <a href="{{ url_for('home') }}" class="btn btn-primary btn-lg"><i class="bi bi-house me-2"></i>Back to Home</a>
+</div>
+{% endblock %}

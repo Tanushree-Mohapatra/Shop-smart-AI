@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <h1 class="fw-bold display-5">🛒 ShopSmart AI</h1>
+    <p class="lead text-muted">Agentic Intelligent Shopping Assistant</p>
+    <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">IBM Hackathon Project</span>
+      <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">IBM SkillsBuild Demo</span>
+      <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">Enterprise AI</span>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="card border-0 shadow-sm mb-5">
+    <div class="card-header fw-bold bg-primary text-white fs-5"><i class="bi bi-diagram-3 me-2"></i>Agentic AI Architecture</div>
+    <div class="card-body p-4">
+      <div class="text-center mb-4 small text-muted fw-semibold">
+        User Query → Intent Detection → IBM Orchestrate → Agent(s) → RAG (ChromaDB) → IBM Granite → Response
+      </div>
+      <div class="row g-3">
+        {% set arch = [
+          ('Agent 1','Shopping Knowledge','bi-book','primary','Answers product questions using IBM Granite + RAG'),
+          ('Agent 2','Product Comparison','bi-bar-chart-steps','success','Side-by-side comparison with AI analysis'),
+          ('Agent 3','Review Intelligence','bi-star-half','warning','Sentiment + fake review detection'),
+          ('Agent 4','Price Predictor','bi-graph-up-arrow','info','Historical price trends + buying advice'),
+          ('Agent 5','Recommendations','bi-magic','danger','Personalised top-10 product picks'),
+          ('Agent 6','Sustainability','bi-leaf','success','Eco scores + green alternatives'),
+          ('Agent 7','Multimodal Search','bi-camera','secondary','Text/Image/Voice product search'),
+          ('Agent 8','Shopping Assistant','bi-chat-dots','primary','Conversational AI with chat history'),
+        ] %}
+        {% for id, name, icon, color, desc in arch %}
+        <div class="col-sm-6 col-lg-3">
+          <div class="p-3 rounded-3 bg-{{ color }}-subtle border border-{{ color }}-subtle h-100">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="bi {{ icon }} text-{{ color }} fs-5"></i>
+              <span class="fw-bold small text-{{ color }}">{{ id }}</span>
+            </div>
+            <div class="fw-semibold small mb-1">{{ name }}</div>
+            <div class="tiny text-muted">{{ desc }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Technology Stack -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-bold"><i class="bi bi-cpu me-2 text-primary"></i>IBM AI Stack</div>
+        <div class="card-body p-4">
+          <ul class="list-unstyled">
+            <li class="mb-3"><strong>IBM watsonx.ai</strong> – Granite-3-8B-Instruct &amp; Granite-13B-Chat for all AI responses</li>
+            <li class="mb-3"><strong>IBM Langflow</strong> – Visual workflow orchestration (User Query → Intent → Agent → RAG → Response)</li>
+            <li class="mb-3"><strong>IBM Orchestrate</strong> – Task delegation, agent coordination, and automation workflows</li>
+            <li><strong>ChromaDB RAG</strong> – 17+ shopping knowledge documents indexed for retrieval-augmented generation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-bold"><i class="bi bi-stack me-2 text-success"></i>Tech Stack</div>
+        <div class="card-body p-4">
+          <div class="row g-2">
+            {% for tech in ['Python 3.11','Flask 3.0','Bootstrap 5','JavaScript ES6','SQLite','ChromaDB','Chart.js','Pillow (OCR)','SpeechRecognition','sentence-transformers'] %}
+            <div class="col-6">
+              <span class="badge bg-success-subtle text-success border border-success-subtle w-100 py-2">{{ tech }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IBM Langflow Workflow -->
+  <div class="card border-0 shadow-sm mb-5">
+    <div class="card-header fw-bold"><i class="bi bi-diagram-2 me-2 text-info"></i>IBM Langflow Workflow</div>
+    <div class="card-body p-4">
+      <p class="text-muted mb-3">Import <code>langflow_workflow.json</code> into IBM Langflow to visualise the complete agentic pipeline:</p>
+      <div class="d-flex flex-wrap align-items-center gap-2 fs-6">
+        {% for step in ['User Input','Intent Classifier','Orchestrator','Agent Router','RAG Retriever (ChromaDB)','IBM Granite LLM','Response Formatter','Frontend Output'] %}
+        <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2">{{ step }}</span>
+        {% if not loop.last %}<i class="bi bi-arrow-right text-muted"></i>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Grid -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-bold"><i class="bi bi-check-circle me-2 text-success"></i>Complete Feature List</div>
+    <div class="card-body p-4">
+      <div class="row g-2">
+        {% set features = [
+          '✅ IBM Granite Models','✅ IBM Langflow Workflow','✅ IBM Orchestrate Integration',
+          '✅ Multi-Agent Architecture','✅ ChromaDB RAG','✅ Product Comparison Engine',
+          '✅ Review Intelligence','✅ Fake Review Detection','✅ Price Prediction',
+          '✅ Recommendation Engine','✅ Sustainability Analysis','✅ Image Search',
+          '✅ Voice Search','✅ Analytics Dashboard','✅ SQLite Database',
+          '✅ Bootstrap 5 Responsive UI','✅ Dark Mode','✅ Wishlist Management',
+          '✅ Chat History','✅ Real-time Charts (Chart.js)',
+        ] %}
+        {% for f in features %}
+        <div class="col-sm-6 col-md-4"><div class="small">{{ f }}</div></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

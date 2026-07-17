@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Product Comparison{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="ss-page-header mb-5">
+    <h1 class="fw-bold"><i class="bi bi-bar-chart-steps text-success me-2"></i>Product Comparison</h1>
+    <p class="text-muted">Select 2–4 products to compare side-by-side. AI-powered analysis by IBM Granite.</p>
+  </div>
+
+  <!-- Product Selection -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-success"></i>Select Products to Compare</h5>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Filter by Category</label>
+          <select class="form-select" id="catFilter">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.name }}">{{ cat.icon }} {{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label small fw-semibold">Search Products</label>
+          <input type="text" class="form-control" id="productSearch" placeholder="Type to search products..."/>
+        </div>
+      </div>
+      <div id="productGrid" class="row g-3 mb-3">
+        {% for p in products %}
+        <div class="col-sm-6 col-md-4 col-lg-3 product-item" data-cat="{{ p.category_name }}" data-name="{{ p.name|lower }}">
+          <div class="card border-2 h-100 ss-compare-select-card" data-pid="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.price }}" data-rating="{{ p.rating }}" data-brand="{{ p.brand_name }}">
+            <div class="card-body p-3 d-flex align-items-start gap-2">
+              <div class="form-check mt-1">
+                <input class="form-check-input compare-check" type="checkbox" value="{{ p.id }}" id="cp{{ p.id }}">
+              </div>
+              <div>
+                <div class="small text-muted">{{ p.brand_name }}</div>
+                <div class="fw-semibold small ss-clamp-2">{{ p.name }}</div>
+                <div class="text-primary fw-bold">₹{{ "{:,.0f}".format(p.price) }}</div>
+                <div class="text-warning small">{{ '★' * (p.rating|int) }} {{ p.rating }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-success px-4" id="compareBtn" disabled>
+          <i class="bi bi-bar-chart-steps me-2"></i>Compare Selected (<span id="selectedCount">0</span>)
+        </button>
+        <button class="btn btn-outline-secondary" id="clearCompare">Clear</button>
+        <div id="selectedBadges" class="d-flex flex-wrap gap-2 ms-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Result -->
+  <div id="comparisonResult" class="d-none">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-success text-white d-flex align-items-center gap-2">
+        <i class="bi bi-robot fs-5"></i>
+        <span class="fw-bold">IBM Granite AI Analysis</span>
+        <span class="badge bg-white text-success ms-auto">Agent 2: Product Comparison</span>
+      </div>
+      <div class="card-body p-4">
+        <div id="aiAnalysis" class="ss-ai-response"></div>
+      </div>
+    </div>
+    <!-- Comparison Table -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header fw-bold">📊 Side-by-Side Comparison</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="comparisonTable">
+            <thead class="table-dark"><tr id="tableHead"></tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4" id="quickStats"></div>
+  </div>
+
+  <!-- Loading state -->
+  <div id="comparisonLoading" class="d-none text-center py-5">
+    <div class="spinner-border text-success mb-3"></div>
+    <p class="text-muted">IBM Granite is analysing your products...</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedIds = [];
+
+// Filter by category
+document.getElementById('catFilter')?.addEventListener('change', function() {
+  const cat = this.value;
+  document.querySelectorAll('.product-item').forEach(el => {
+    el.style.display = (!cat || el.dataset.cat === cat) ? '' : 'none';
+  });
+});
+
+// Search filter
+document.getElementById('productSearch')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.product-item').forEach(el => {
+    el.style.display = el.dataset.name.includes(q) ? '' : 'none';
+  });
+});
+
+// Checkbox handler
+document.querySelectorAll('.compare-check').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const pid = parseInt(this.value);
+    const card = this.closest('.ss-compare-select-card');
+    if (this.checked && selectedIds.length >= 4) { this.checked = false; return; }
+    if (this.checked) { selectedIds.push(pid); card.classList.add('border-success'); }
+    else { selectedIds = selectedIds.filter(id => id !== pid); card.classList.remove('border-success'); }
+    updateCompareUI();
+  });
+});
+
+function updateCompareUI() {
+  const btn = document.getElementById('compareBtn');
+  document.getElementById('selectedCount').textContent = selectedIds.length;
+  btn.disabled = selectedIds.length < 2;
+  const badges = document.getElementById('selectedBadges');
+  badges.innerHTML = selectedIds.map(id => {
+    const card = document.querySelector(`.ss-compare-select-card[data-pid="${id}"]`);
+    return `<span class="badge bg-success-subtle text-success border border-success-subtle">${card?.dataset.name||id}</span>`;
+  }).join('');
+}
+
+document.getElementById('clearCompare')?.addEventListener('click', () => {
+  selectedIds = [];
+  document.querySelectorAll('.compare-check').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('.ss-compare-select-card').forEach(c=>c.classList.remove('border-success'));
+  updateCompareUI();
+  document.getElementById('comparisonResult').classList.add('d-none');
+});
+
+document.getElementById('compareBtn')?.addEventListener('click', () => {
+  if (selectedIds.length < 2) return;
+  document.getElementById('comparisonLoading').classList.remove('d-none');
+  document.getElementById('comparisonResult').classList.add('d-none');
+
+  fetch('/api/compare', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({product_ids: selectedIds})
+  })
+  .then(r=>r.json())
+  .then(data => {
+    document.getElementById('comparisonLoading').classList.add('d-none');
+    const result = data.result || {};
+    const products = result.products || [];
+
+    // AI Analysis
+    document.getElementById('aiAnalysis').innerHTML =
+      (result.analysis||'').replace(/\n/g,'<br/>');
+
+    // Table headers
+    const head = document.getElementById('tableHead');
+    head.innerHTML = '<th>Feature</th>' + products.map(p=>
+      `<th class="text-center">${p.name}<br/><small class="text-muted">${p.brand_name}</small></th>`
+    ).join('');
+
+    // Table body – core attributes + spec keys union
+    const coreRows = [
+      {label:'Price',  key:'price',  fmt: v=>`₹${parseFloat(v).toLocaleString('en-IN')}`, higherIsBetter:false},
+      {label:'Rating', key:'rating', fmt: v=>`${v}/5`,  higherIsBetter:true},
+      {label:'Platform',key:'platform',fmt:v=>v, higherIsBetter:null},
+      {label:'Category',key:'category_name',fmt:v=>v, higherIsBetter:null},
+      {label:'Eco Score',key:'eco_score',fmt:v=>`${v}/10`, higherIsBetter:true},
+    ];
+
+    // Collect all spec keys across all compared products
+    const specKeysSet = new Set();
+    products.forEach(p => {
+      const sp = typeof p.specs === 'string' ? JSON.parse(p.specs||'{}') : (p.specs||{});
+      Object.keys(sp).forEach(k => specKeysSet.add(k));
+    });
+
+    const body = document.getElementById('tableBody');
+    let bodyHtml = '';
+
+    coreRows.forEach(({label, key, fmt, higherIsBetter}) => {
+      const vals = products.map(p => p[key]);
+      const nums = vals.map(v => parseFloat(v)||0);
+      const best = higherIsBetter === true ? Math.max(...nums) : (higherIsBetter === false ? Math.min(...nums) : null);
+      bodyHtml += `<tr><td class="fw-semibold bg-body-secondary">${label}</td>`;
+      products.forEach((p, j) => {
+        const isBest = best !== null && nums[j] === best && nums.filter(n=>n===best).length < nums.length;
+        bodyHtml += `<td class="text-center ${isBest?'text-success fw-bold':''}">${fmt(vals[j])}${isBest?' 🏆':''}</td>`;
+      });
+      bodyHtml += `</tr>`;
+    });
+
+    // Spec rows
+    specKeysSet.forEach(specKey => {
+      bodyHtml += `<tr><td class="fw-semibold text-muted bg-body-secondary">${specKey}</td>`;
+      products.forEach(p => {
+        const sp = typeof p.specs === 'string' ? JSON.parse(p.specs||'{}') : (p.specs||{});
+        bodyHtml += `<td class="text-center small">${sp[specKey]||'—'}</td>`;
+      });
+      bodyHtml += `</tr>`;
+    });
+
+    body.innerHTML = bodyHtml;
+
+    // Quick stats
+    const stats = result.quick_stats || {};
+    const statsEl = document.getElementById('quickStats');
+    const statCards = [
+      {icon:'bi-currency-rupee', label:'Best Budget', value:stats.cheapest||'-', color:'info'},
+      {icon:'bi-star-fill', label:'Highest Rated', value:stats.highest_rated||'-', color:'warning'},
+      {icon:'bi-trophy', label:'Best Value', value:stats.best_value||'-', color:'success'},
+    ];
+    statsEl.innerHTML = statCards.map(s=>
+      `<div class="col-md-4"><div class="card border-${s.color} border-2 text-center p-3"><i class="bi ${s.icon} text-${s.color} fs-2 d-block mb-2"></i><div class="fw-bold">${s.label}</div><div class="text-muted small">${s.value}</div></div></div>`
+    ).join('');
+
+    document.getElementById('comparisonResult').classList.remove('d-none');
+    document.getElementById('comparisonResult').scrollIntoView({behavior:'smooth'});
+  })
+  .catch(e => {
+    document.getElementById('comparisonLoading').classList.add('d-none');
+    alert('Error: ' + e.message);
+  });
+});
+</script>
+{% endblock %}
